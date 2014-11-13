@@ -6,7 +6,6 @@ Documentation=https://github.com/kelseyhightower/kube-register
 ExecStartPre=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/kubernetes/kube-register
 ExecStartPre=/usr/bin/chmod +x /opt/bin/kube-register
 ExecStart=/opt/bin/kube-register \
---metadata=role=kubernetes \
 --fleet-endpoint=unix:///var/run/fleet.sock \
 --api-endpoint=http://127.0.0.1:8080
 Restart=always
