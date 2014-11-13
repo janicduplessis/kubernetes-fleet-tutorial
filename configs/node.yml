@@ -1,28 +1,33 @@
 #cloud-config
 
 coreos:
+  etcd:
+    # generate a new token for each unique cluster from https://discovery.etcd.io/new
+    discovery: https://discovery.etcd.io/43775431681a6802ab13c7fd46e54f82
+    # multi-region deployments, multi-cloud deployments, and droplets without
+    # private networking need to use $public_ipv4
+    addr: $private_ipv4:4001
+    peer-addr: $private_ipv4:7001
   fleet:
-    etcd_servers: http://192.168.12.10:4001
-    metadata: role=kubernetes
+    public-ip: $private_ipv4   # used for fleetctl ssh command
   units:
     - name: etcd.service
-      mask: true
+      command: start
     - name: fleet.service
       command: start
     - name: flannel.service
       command: start
       content: |
         [Unit]
-        After=network-online.target 
+        After=network-online.target
         Wants=network-online.target
         Description=flannel is an etcd backed overlay network for containers
-
         [Service]
         Type=notify
         ExecStartPre=-/usr/bin/mkdir -p /opt/bin
         ExecStartPre=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/flannel/flanneld
         ExecStartPre=/usr/bin/chmod +x /opt/bin/flanneld
-        ExecStart=/opt/bin/flanneld -etcd-endpoint http://192.168.12.10:4001
+        ExecStart=/opt/bin/flanneld -etcd-endpoint http://$private_ipv4:4001
     - name: docker.service
       command: start
       content: |
@@ -31,7 +36,6 @@ coreos:
         Wants=flannel.service
         Description=Docker Application Container Engine
         Documentation=http://docs.docker.io
-
         [Service]
         EnvironmentFile=/run/flannel/subnet.env
         ExecStartPre=/bin/mount --make-rprivate /
@@ -47,17 +51,10 @@ coreos:
         Documentation=https://github.com/kelseyhightower/setup-network-environment
         Requires=network-online.target
         After=network-online.target
-
         [Service]
         ExecStartPre=-/usr/bin/mkdir -p /opt/bin
-        ExecStartPre=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/snenv/setup-network-environment 
+        ExecStartPre=/usr/bin/wget -N -P /opt/bin http://storage.googleapis.com/snenv/setup-network-environment
         ExecStartPre=/usr/bin/chmod +x /opt/bin/setup-network-environment
         ExecStart=/opt/bin/setup-network-environment
         RemainAfterExit=yes
         Type=oneshot
-  update:
-    group: alpha
-    reboot-strategy: off
-ssh_authorized_keys:
-    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDHo+5nVpxDhnWBPhEuQ7D7ZYELvA5+fPEWfHmMUwBdW069FSfX1LtbVAUKW7NGMfCxTijQMfvmFt7i+o28uqrVGN+xlDdkKTarPYO/Ux6Rukw0D5RZLVDVdRIOV8Si26pkFp4ezs1NFnCFsPTXD8U4cQ1lok//x248oKGsB4ZWuRNf4PCaIdXDveXdQRbaV5SDo9JEt9VkmfSraH5JENguP51RhFJYzWQAB1QbRZrHYUfZbE+pb/XDTdSPidfRCvss9fDrrhviZjv1Gr8C9jbmSGRB8pKwGC/GWV/mj8nYEY1K3/0c/N9NNIPtmvNkQjq7eGsSUf0cM8ZbwWugr8cB kelseyhightower
-

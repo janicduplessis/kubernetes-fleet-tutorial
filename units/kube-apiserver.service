@@ -12,6 +12,3 @@ ExecStart=/opt/bin/apiserver \
 --logtostderr=true
 Restart=always
 RestartSec=10
-
-[X-Fleet]
-MachineMetadata=role=kubernetes
